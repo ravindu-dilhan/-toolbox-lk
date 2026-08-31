@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter - ToolBox LK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="../index.html">
+                <i class="bi bi-tools text-primary"></i>
+                ToolBox <span class="text-primary">LK</span>
+            </a>
+            <a href="../index.html" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </nav>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="text-center mb-4">
+                        <div class="hero-icon mb-3">
+                            <i class="bi bi-rulers"></i>
+                        </div>
+                        <h1 class="fw-bold">Unit Converter</h1>
+                        <p class="text-secondary">Convert length, weight, and temperature quickly.</p>
+                    </div>
+
+                    <div class="tool-card">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Category</label>
+                                <select id="category" class="form-select form-select-lg">
+                                    <option value="length">Length</option>
+                                    <option value="weight">Weight</option>
+                                    <option value="temperature">Temperature</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">Value</label>
+                                <input id="value" type="number" class="form-control form-control-lg" value="1" step="any">
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">From</label>
+                                <select id="fromUnit" class="form-select form-select-lg"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">To</label>
+                                <select id="toUnit" class="form-select form-select-lg"></select>
+                            </div>
+                        </div>
+
+                        <button id="convertBtn" class="btn btn-primary btn-lg w-100 mt-4">
+                            <i class="bi bi-arrow-left-right"></i>
+                            Convert
+                        </button>
+
+                        <div class="alert alert-success mt-4 mb-0" id="resultBox">
+                            Result: <strong id="resultValue">1</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const categorySelect = document.getElementById('category');
+        const valueInput = document.getElementById('value');
+        const fromUnitSelect = document.getElementById('fromUnit');
+        const toUnitSelect = document.getElementById('toUnit');
+        const resultValue = document.getElementById('resultValue');
+        const convertBtn = document.getElementById('convertBtn');
+
+        const units = {
+            length: { meter: 1, kilometer: 1000, mile: 1609.344, foot: 0.3048, inch: 0.0254 },
+            weight: { kilogram: 1, gram: 0.001, pound: 0.453592, ounce: 0.0283495 },
+            temperature: { celsius: 'celsius', fahrenheit: 'fahrenheit', kelvin: 'kelvin' }
+        };
+
+        function populateUnits() {
+            const type = categorySelect.value;
+            const options = Object.keys(units[type]);
+            fromUnitSelect.innerHTML = options.map((unit) => `<option value="${unit}">${formatUnit(unit)}</option>`).join('');
+            toUnitSelect.innerHTML = options.map((unit) => `<option value="${unit}">${formatUnit(unit)}</option>`).join('');
+            if (type === 'temperature') {
+                fromUnitSelect.selectedIndex = 0;
+                toUnitSelect.selectedIndex = 2;
+            } else {
+                fromUnitSelect.selectedIndex = 0;
+                toUnitSelect.selectedIndex = 1;
+            }
+            updateResult();
+        }
+
+        function formatUnit(unit) {
+            return unit.charAt(0).toUpperCase() + unit.slice(1);
+        }
+
+        function convertValue() {
+            const type = categorySelect.value;
+            const inputValue = Number(valueInput.value) || 0;
+            const from = fromUnitSelect.value;
+            const to = toUnitSelect.value;
+
+            if (type === 'length' || type === 'weight') {
+                const base = inputValue * units[type][from];
+                const result = base / units[type][to];
+                return result;
+            }
+
+            if (type === 'temperature') {
+                let celsius;
+                if (from === 'celsius') celsius = inputValue;
+                if (from === 'fahrenheit') celsius = (inputValue - 32) * 5 / 9;
+                if (from === 'kelvin') celsius = inputValue - 273.15;
+
+                if (to === 'celsius') return celsius;
+                if (to === 'fahrenheit') return (celsius * 9 / 5) + 32;
+                if (to === 'kelvin') return celsius + 273.15;
+            }
+
+            return inputValue;
+        }
+
+        function updateResult() {
+            const value = convertValue();
+            resultValue.textContent = `${Number(value).toFixed(4).replace(/\.0+$|(?<=\.[0-9]*?)0+$/g, '')} ${formatUnit(toUnitSelect.value)}`;
+        }
+
+        categorySelect.addEventListener('change', populateUnits);
+        fromUnitSelect.addEventListener('change', updateResult);
+        toUnitSelect.addEventListener('change', updateResult);
+        valueInput.addEventListener('input', updateResult);
+        convertBtn.addEventListener('click', updateResult);
+
+        populateUnits();
+    </script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Remover - ToolBox LK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="../index.html">
+                <i class="bi bi-tools text-primary"></i>
+                ToolBox <span class="text-primary">LK</span>
+            </a>
+            <a href="../index.html" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </nav>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-4">
+                        <div class="hero-icon mb-3">
+                            <i class="bi bi-scissors"></i>
+                        </div>
+                        <h1 class="fw-bold">Background Remover</h1>
+                        <p class="text-secondary">Remove a solid background from your image and download a transparent PNG.</p>
+                    </div>
+
+                    <div class="tool-card">
+                        <form id="bgRemoveForm">
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Choose image</label>
+                                <input type="file" class="form-control form-control-lg" id="imageFile" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif" required>
+                            </div>
+
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Background color</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color w-100" id="bgColor" value="#ffffff">
+                                        <button type="button" class="btn btn-outline-primary" id="autoDetectBtn">
+                                            Auto detect
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Tolerance</label>
+                                    <input type="range" class="form-range" id="tolerance" min="0" max="100" value="30">
+                                    <div class="text-secondary small">Sensitivity: <span id="toleranceValue">30</span></div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg" id="removeBtn">
+                                <i class="bi bi-stars"></i>
+                                Remove Background
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg" id="smartCutoutBtn">
+                                <i class="bi bi-person-bounding-box"></i>
+                                Smart Cutout
+                            </button>
+                        </div>
+                        </form>
+
+                        <div class="alert alert-success mt-4 d-none" id="resultArea">
+                            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                                <div>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    Background removed successfully.
+                                </div>
+                                <a id="downloadLink" class="btn btn-success" download>
+                                    <i class="bi bi-download"></i>
+                                    Download PNG
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-none" id="previewArea">
+                            <img id="resultImage" alt="Processed result" class="img-fluid rounded border" style="max-height: 420px; background: repeating-conic-gradient(#e5e7eb 0% 25%, #f3f4f6 0% 50%) 50% / 20px 20px;">
+                        </div>
+
+                        <div class="alert alert-danger mt-4 d-none" id="errorArea"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const form = document.getElementById('bgRemoveForm');
+        const fileInput = document.getElementById('imageFile');
+        const bgColorPicker = document.getElementById('bgColor');
+        const autoDetectBtn = document.getElementById('autoDetectBtn');
+        const smartCutoutBtn = document.getElementById('smartCutoutBtn');
+        const toleranceRange = document.getElementById('tolerance');
+        const toleranceValue = document.getElementById('toleranceValue');
+        const removeBtn = document.getElementById('removeBtn');
+        const resultArea = document.getElementById('resultArea');
+        const previewArea = document.getElementById('previewArea');
+        const downloadLink = document.getElementById('downloadLink');
+        const errorArea = document.getElementById('errorArea');
+        const resultImage = document.getElementById('resultImage');
+
+        toleranceRange.addEventListener('input', () => {
+            toleranceValue.textContent = toleranceRange.value;
+        });
+
+        fileInput.addEventListener('change', async function () {
+            const file = fileInput.files[0];
+            if (!file || !isSupportedImage(file)) return;
+
+            try {
+                const color = await detectBackgroundColor(file);
+                bgColorPicker.value = rgbToHex(color.r, color.g, color.b);
+            } catch (error) {
+                console.warn('Auto background detection failed:', error);
+            }
+        });
+
+        autoDetectBtn.addEventListener('click', async function () {
+            const file = fileInput.files[0];
+            if (!file) {
+                errorArea.textContent = 'Choose an image before auto-detecting the background.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            if (!isSupportedImage(file)) {
+                errorArea.textContent = 'Please choose a JPG, PNG, WEBP, BMP, or GIF image.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            try {
+                const color = await detectBackgroundColor(file);
+                bgColorPicker.value = rgbToHex(color.r, color.g, color.b);
+                errorArea.classList.add('d-none');
+            } catch (error) {
+                errorArea.textContent = error.message || 'Background detection failed.';
+                errorArea.classList.remove('d-none');
+            }
+        });
+
+        smartCutoutBtn.addEventListener('click', async function () {
+            const file = fileInput.files[0];
+            if (!file) {
+                errorArea.textContent = 'Choose an image before running a smart cutout.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            if (!isSupportedImage(file)) {
+                errorArea.textContent = 'This tool supports JPG, PNG, WEBP, BMP, and GIF images.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            toleranceRange.value = '52';
+            toleranceValue.textContent = '52';
+            autoDetectBtn.click();
+            setTimeout(() => form.requestSubmit(), 120);
+        });
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const file = fileInput.files[0];
+
+            if (!file) {
+                errorArea.textContent = 'Please choose an image first.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            if (!isSupportedImage(file)) {
+                errorArea.textContent = 'Please select a JPG, PNG, WEBP, BMP, or GIF image.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            removeBtn.disabled = true;
+            smartCutoutBtn.disabled = true;
+            errorArea.classList.add('d-none');
+            resultArea.classList.add('d-none');
+            previewArea.classList.add('d-none');
+
+            try {
+                const dataUrl = await readFileAsDataUrl(file);
+                const image = await loadImage(dataUrl);
+                const targetColor = hexToRgb(bgColorPicker.value || '#ffffff');
+                const tolerance = Number(toleranceRange.value || 30);
+                const resultCanvas = removeBackgroundFromImage(image, targetColor, tolerance);
+                const pngUrl = resultCanvas.toDataURL('image/png');
+                resultImage.src = pngUrl;
+                downloadLink.href = pngUrl;
+                downloadLink.download = `${file.name.replace(/\.[^.]+$/, '') || 'background-removed'}-transparent.png`;
+                previewArea.classList.remove('d-none');
+                resultArea.classList.remove('d-none');
+            } catch (error) {
+                errorArea.textContent = error.message || 'Background removal failed.';
+                errorArea.classList.remove('d-none');
+            } finally {
+                removeBtn.disabled = false;
+                smartCutoutBtn.disabled = false;
+            }
+        });
+
+        function removeBackgroundFromImage(image, targetColor, tolerance) {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const width = canvas.width;
+            const height = canvas.height;
+            const threshold = Math.min(180, Math.max(18, (tolerance / 100) * 120 + 18));
+            const feather = Math.max(10, 18 + (tolerance / 100) * 28);
+            const brightnessBias = (targetColor.r + targetColor.g + targetColor.b) / 3;
+            const distanceMap = new Float32Array(width * height);
+            const contrastMap = new Float32Array(width * height);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = (y * width + x) * 4;
+                    const r = pixels[index];
+                    const g = pixels[index + 1];
+                    const b = pixels[index + 2];
+                    const brightness = (r + g + b) / 3;
+                    const distance = Math.sqrt(
+                        (r - targetColor.r) ** 2 +
+                        (g - targetColor.g) ** 2 +
+                        (b - targetColor.b) ** 2
+                    );
+
+                    const adaptiveThreshold = threshold + Math.abs(brightness - brightnessBias) * 0.22;
+                    distanceMap[y * width + x] = distance;
+
+                    let contrast = 0;
+                    const localRadius = 1;
+                    for (let dy = -localRadius; dy <= localRadius; dy++) {
+                        for (let dx = -localRadius; dx <= localRadius; dx++) {
+                            const nx = Math.min(width - 1, Math.max(0, x + dx));
+                            const ny = Math.min(height - 1, Math.max(0, y + dy));
+                            const refIndex = (ny * width + nx) * 4;
+                            const refR = pixels[refIndex];
+                            const refG = pixels[refIndex + 1];
+                            const refB = pixels[refIndex + 2];
+                            contrast += Math.abs(r - refR) + Math.abs(g - refG) + Math.abs(b - refB);
+                        }
+                    }
+                    contrastMap[y * width + x] = contrast / 27;
+
+                    if (distance <= adaptiveThreshold * 0.82) {
+                        pixels[index + 3] = 0;
+                    } else if (distance <= adaptiveThreshold + feather) {
+                        const fade = (distance - adaptiveThreshold * 0.82) / Math.max(1, adaptiveThreshold + feather - adaptiveThreshold * 0.82);
+                        pixels[index + 3] = Math.round(255 * (1 - fade));
+                    } else {
+                        pixels[index + 3] = 255;
+                    }
+                }
+            }
+
+            const refined = applySubjectEdgeRefinement(pixels, width, height, distanceMap, contrastMap, threshold, feather);
+            for (let i = 0; i < refined.length; i++) {
+                const pixelIndex = i * 4;
+                pixels[pixelIndex + 3] = refined[i] < 8 ? 0 : refined[i];
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            return canvas;
+        }
+
+        function applySubjectEdgeRefinement(pixels, width, height, distanceMap, contrastMap, threshold, feather) {
+            const alpha = new Float32Array(width * height);
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const index = y * width + x;
+                    const pixIndex = index * 4;
+                    const distance = distanceMap[index];
+                    const contrast = contrastMap[index];
+                    const baseAlpha = pixels[pixIndex + 3];
+                    const isEdge = contrast > 38 && distance > threshold * 0.55;
+                    let finalAlpha = baseAlpha;
+
+                    if (isEdge) {
+                        const smoothed = (distance - threshold) / Math.max(1, feather + 12);
+                        finalAlpha = Math.round(255 * Math.max(0, 1 - Math.min(1, smoothed)));
+                    }
+
+                    alpha[index] = finalAlpha;
+                }
+            }
+
+            const blurred = new Float32Array(alpha.length);
+            const radius = 2;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    let total = 0;
+                    let count = 0;
+                    for (let dy = -radius; dy <= radius; dy++) {
+                        for (let dx = -radius; dx <= radius; dx++) {
+                            const nx = Math.min(width - 1, Math.max(0, x + dx));
+                            const ny = Math.min(height - 1, Math.max(0, y + dy));
+                            total += alpha[ny * width + nx];
+                            count++;
+                        }
+                    }
+                    blurred[y * width + x] = count ? total / count : alpha[y * width + x];
+                }
+            }
+
+            const refined = new Float32Array(alpha.length);
+            for (let i = 0; i < alpha.length; i++) {
+                const value = blurred[i];
+                refined[i] = value < 24 ? 0 : value > 250 ? 255 : value;
+            }
+
+            return refined;
+        }
+
+        async function detectBackgroundColor(file) {
+            const dataUrl = await readFileAsDataUrl(file);
+            const image = await loadImage(dataUrl);
+            const maxDimension = 400;
+            const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            const samples = [];
+
+            const step = Math.max(2, Math.floor(Math.min(canvas.width, canvas.height) / 80));
+            for (let y = 0; y < canvas.height; y += step) {
+                for (let x = 0; x < canvas.width; x += step) {
+                    const index = (y * canvas.width + x) * 4;
+                    const alpha = pixels[index + 3];
+                    if (alpha < 20) continue;
+
+                    const isBorder = x < canvas.width * 0.12 || x > canvas.width * 0.88 || y < canvas.height * 0.12 || y > canvas.height * 0.88;
+                    if (isBorder) {
+                        samples.push({ r: pixels[index], g: pixels[index + 1], b: pixels[index + 2] });
+                    }
+                }
+            }
+
+            if (!samples.length) {
+                for (let y = 0; y < canvas.height; y += step) {
+                    for (let x = 0; x < canvas.width; x += step) {
+                        const index = (y * canvas.width + x) * 4;
+                        const alpha = pixels[index + 3];
+                        if (alpha < 20) continue;
+                        samples.push({ r: pixels[index], g: pixels[index + 1], b: pixels[index + 2] });
+                    }
+                }
+            }
+
+            if (!samples.length) {
+                throw new Error('Could not detect a stable background color from this image.');
+            }
+
+            const buckets = new Map();
+            for (const sample of samples) {
+                const key = `${Math.round(sample.r / 16)}-${Math.round(sample.g / 16)}-${Math.round(sample.b / 16)}`;
+                buckets.set(key, (buckets.get(key) || 0) + 1);
+            }
+
+            let bestColor = { r: 255, g: 255, b: 255 };
+            let bestCount = -1;
+            for (const [key, count] of buckets.entries()) {
+                if (count > bestCount) {
+                    const [r, g, b] = key.split('-').map((part) => Number(part) * 16);
+                    bestColor = { r, g, b };
+                    bestCount = count;
+                }
+            }
+
+            return bestColor;
+        }
+
+        function isSupportedImage(file) {
+            const supportedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/bmp', 'image/gif'];
+            const extension = (file.name || '').toLowerCase();
+            const hasSupportedExtension = /\.(png|jpe?g|webp|bmp|gif)$/i.test(extension);
+            return supportedTypes.includes(file.type) || hasSupportedExtension;
+        }
+
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Could not read the image file.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('The selected file is not a valid image.'));
+                img.src = src;
+            });
+        }
+
+        function hexToRgb(hex) {
+            const normalized = hex.replace('#', '');
+            const value = normalized.length === 3
+                ? normalized.split('').map((char) => char + char).join('')
+                : normalized;
+
+            const num = parseInt(value, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech - ToolBox LK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .premium-card {
+            background: linear-gradient(135deg, rgba(13,110,253,0.06), rgba(255,255,255,1));
+            border: 1px solid rgba(13,110,253,0.14);
+            box-shadow: 0 22px 50px rgba(13,110,253,0.08);
+        }
+
+        .voice-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(13,110,253,0.08);
+        }
+
+        .voice-bars {
+            display: flex;
+            align-items: end;
+            gap: 4px;
+            height: 32px;
+            width: 42px;
+        }
+
+        .voice-bars span {
+            width: 6px;
+            background: linear-gradient(180deg, #0d6efd, #8b5cf6);
+            border-radius: 999px 999px 0 0;
+            animation: pulse 0.9s ease-in-out infinite alternate;
+            transform-origin: bottom;
+        }
+
+        .voice-bars span:nth-child(2) { animation-delay: 0.15s; }
+        .voice-bars span:nth-child(3) { animation-delay: 0.3s; }
+        .voice-bars span:nth-child(4) { animation-delay: 0.45s; }
+
+        @keyframes pulse {
+            0% { transform: scaleY(0.35); opacity: 0.6; }
+            100% { transform: scaleY(1); opacity: 1; }
+        }
+
+        .voice-bars.is-paused span {
+            animation-play-state: paused;
+            opacity: 0.6;
+        }
+
+        .audio-player-shell {
+            background: rgba(13,110,253,0.04);
+            border: 1px solid rgba(13,110,253,0.12);
+            border-radius: 18px;
+            padding: 18px;
+        }
+
+        .mini-wave {
+            display: flex;
+            align-items: end;
+            gap: 5px;
+            height: 54px;
+            margin: 12px 0 16px;
+            padding: 0 8px;
+        }
+
+        .mini-wave span {
+            display: block;
+            width: 8px;
+            border-radius: 999px 999px 0 0;
+            background: linear-gradient(180deg, #0d6efd, #8b5cf6);
+            opacity: 0.74;
+            animation: wavePulse 1s ease-in-out infinite alternate;
+            transform-origin: bottom;
+        }
+
+        .mini-wave span:nth-child(odd) { animation-delay: 0.15s; }
+        .mini-wave span:nth-child(3n) { animation-delay: 0.3s; }
+
+        @keyframes wavePulse {
+            0% { transform: scaleY(0.35); opacity: 0.5; }
+            100% { transform: scaleY(1); opacity: 1; }
+        }
+
+        .audio-preview {
+            border-radius: 14px;
+            background: white;
+            border: 1px solid rgba(13,110,253,0.08);
+            padding: 12px;
+        }
+    </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6878103341405638" crossorigin="anonymous"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="../index.html">
+                <i class="bi bi-tools text-primary"></i>
+                ToolBox <span class="text-primary">LK</span>
+            </a>
+            <a href="../index.html" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </nav>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-4">
+                        <div class="hero-icon mb-3">
+                            <i class="bi bi-volume-up"></i>
+                        </div>
+                        <h1 class="fw-bold">Text to Speech</h1>
+                        <p class="text-secondary">Convert written text into spoken audio using your browser voice settings.</p>
+                    </div>
+
+                    <div class="my-3 text-center">
+                        <ins class="adsbygoogle"
+                             style="display:block; text-align:center;"
+                             data-ad-client="ca-pub-6878103341405638"
+                             data-ad-slot="9876543210"
+                             data-ad-format="auto"
+                             data-full-width-responsive="true"></ins>
+                        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                    </div>
+
+                    <div class="tool-card premium-card">
+                        <div class="voice-panel mb-3">
+                            <div class="voice-bars" id="voiceBars">
+                                <span style="height: 45%;"></span>
+                                <span style="height: 75%;"></span>
+                                <span style="height: 60%;"></span>
+                                <span style="height: 90%;"></span>
+                            </div>
+                            <div>
+                                <div class="fw-semibold mb-1">Speech status</div>
+                                <div class="small text-secondary" id="statusText">Ready</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Text</label>
+                            <textarea id="speechText" rows="8" class="form-control" placeholder="Type or paste your text here..."></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Voice</label>
+                                <select id="voiceSelect" class="form-select">
+                                    <option value="">Loading voices...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Language</label>
+                                <select id="languageSelect" class="form-select">
+                                    <option value="all">All languages</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Voice quality</label>
+                                <select id="qualitySelect" class="form-select">
+                                    <option value="standard">Standard</option>
+                                    <option value="warm">Warm</option>
+                                    <option value="crisp">Crisp</option>
+                                    <option value="premium">Premium</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Rate <span id="rateValue" class="text-secondary">1.0x</span></label>
+                                <input type="range" id="rateInput" class="form-range" min="0.5" max="1.5" step="0.1" value="1">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Pitch <span id="pitchValue" class="text-secondary">1.0x</span></label>
+                                <input type="range" id="pitchInput" class="form-range" min="0.5" max="2" step="0.1" value="1">
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <div class="small text-secondary mt-4">Characters: <span id="charCount">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="audio-player-shell mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+                                <div>
+                                    <div class="fw-semibold">Premium audio preview</div>
+                                    <div class="small text-secondary">Generated output and browser playback</div>
+                                </div>
+                                <span id="qualityBadge" class="badge bg-primary-subtle text-primary px-3 py-2">Standard</span>
+                            </div>
+                            <div class="mini-wave" aria-hidden="true">
+                                <span style="height: 30%;"></span>
+                                <span style="height: 52%;"></span>
+                                <span style="height: 74%;"></span>
+                                <span style="height: 45%;"></span>
+                                <span style="height: 65%;"></span>
+                                <span style="height: 84%;"></span>
+                                <span style="height: 58%;"></span>
+                                <span style="height: 90%;"></span>
+                                <span style="height: 62%;"></span>
+                                <span style="height: 40%;"></span>
+                                <span style="height: 78%;"></span>
+                                <span style="height: 48%;"></span>
+                            </div>
+                            <div class="audio-preview">
+                                <audio id="audioPlayer" controls class="w-100" preload="none"></audio>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <div class="small text-secondary">Voice count: <span id="voiceCount">0</span></div>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <div class="small text-secondary">Characters: <span id="charCountTotal">0</span></div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light border mt-3 mb-3 d-none" id="statusMessage"></div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button id="speakBtn" class="btn btn-primary" type="button">
+                                <i class="bi bi-play-fill"></i>
+                                Speak
+                            </button>
+                            <button id="pauseBtn" class="btn btn-outline-secondary" type="button">
+                                <i class="bi bi-pause-fill"></i>
+                                Pause
+                            </button>
+                            <button id="resumeBtn" class="btn btn-outline-primary" type="button">
+                                <i class="bi bi-play-circle"></i>
+                                Resume
+                            </button>
+                            <button id="stopBtn" class="btn btn-outline-danger" type="button">
+                                <i class="bi bi-stop-fill"></i>
+                                Stop
+                            </button>
+                            <button id="exportMp3Btn" class="btn btn-success" type="button">
+                                <i class="bi bi-music-note-beamed"></i>
+                                Download MP3
+                            </button>
+                            <button id="downloadBtn" class="btn btn-outline-success ms-auto" type="button">
+                                <i class="bi bi-download"></i>
+                                Download text
+                            </button>
+                            <button id="clearBtn" class="btn btn-outline-dark" type="button">
+                                <i class="bi bi-x-circle"></i>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const speechText = document.getElementById('speechText');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const rateInput = document.getElementById('rateInput');
+        const pitchInput = document.getElementById('pitchInput');
+        const rateValue = document.getElementById('rateValue');
+        const pitchValue = document.getElementById('pitchValue');
+        const voiceCount = document.getElementById('voiceCount');
+        const charCount = document.getElementById('charCount');
+        const qualityBadge = document.getElementById('qualityBadge');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const statusText = document.getElementById('statusText');
+        const speakBtn = document.getElementById('speakBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const exportMp3Btn = document.getElementById('exportMp3Btn');
+        const statusMessage = document.getElementById('statusMessage');
+        const voiceBars = document.getElementById('voiceBars');
+
+        let voices = [];
+
+        function setStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('d-none', 'alert-danger', 'alert-success', 'alert-warning');
+            statusMessage.classList.add(isError ? 'alert-danger' : 'alert-success');
+            statusText.textContent = message;
+        }
+
+        function setSpeakingState(isSpeaking, isPaused = false) {
+            voiceBars.classList.toggle('is-paused', isPaused);
+            if (isSpeaking && !isPaused) {
+                voiceBars.style.opacity = '1';
+            } else if (isPaused) {
+                voiceBars.style.opacity = '0.7';
+            } else {
+                voiceBars.style.opacity = '0.5';
+            }
+        }
+
+        function updateRangeLabels() {
+            rateValue.textContent = `${Number(rateInput.value).toFixed(1)}x`;
+            pitchValue.textContent = `${Number(pitchInput.value).toFixed(1)}x`;
+            const qualityMap = {
+                standard: { label: 'Standard', rate: 1.0, pitch: 1.0 },
+                warm: { label: 'Warm', rate: 0.9, pitch: 0.8 },
+                crisp: { label: 'Crisp', rate: 1.15, pitch: 1.2 },
+                premium: { label: 'Premium', rate: 1.25, pitch: 1.4 }
+            };
+
+            const selectedQuality = qualityMap[qualitySelect.value] || qualityMap.standard;
+            qualityBadge.textContent = selectedQuality.label;
+            if (!rateInput.dataset.locked) {
+                rateInput.value = selectedQuality.rate;
+            }
+            if (!pitchInput.dataset.locked) {
+                pitchInput.value = selectedQuality.pitch;
+            }
+            rateValue.textContent = `${Number(rateInput.value).toFixed(1)}x`;
+            pitchValue.textContent = `${Number(pitchInput.value).toFixed(1)}x`;
+        }
+
+        function updateCharacterCount() {
+            charCount.textContent = speechText.value.length;
+        }
+
+        function populateLanguageOptions() {
+            const languages = new Set();
+            voices.forEach((voice) => {
+                if (voice.lang) languages.add(voice.lang.split('-')[0]);
+            });
+
+            const options = Array.from(languages).sort();
+            languageSelect.innerHTML = '<option value="all">All languages</option>';
+            options.forEach((language) => {
+                const option = document.createElement('option');
+                option.value = language;
+                option.textContent = language.toUpperCase();
+                languageSelect.appendChild(option);
+            });
+        }
+
+        function filterVoicesByLanguage() {
+            const selectedLanguage = languageSelect.value;
+            voiceSelect.innerHTML = '';
+
+            const filtered = selectedLanguage === 'all'
+                ? voices
+                : voices.filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith(selectedLanguage.toLowerCase()));
+
+            if (!filtered.length) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No voices available for this language';
+                voiceSelect.appendChild(option);
+                voiceCount.textContent = '0';
+                return;
+            }
+
+            filtered.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.default) option.textContent += ' • Default';
+                voiceSelect.appendChild(option);
+            });
+
+            voiceCount.textContent = filtered.length;
+            voiceSelect.selectedIndex = 0;
+        }
+
+        function populateVoices() {
+            if (!('speechSynthesis' in window)) {
+                setStatus('Your browser does not support text-to-speech.', true);
+                return;
+            }
+
+            voices = window.speechSynthesis.getVoices();
+            populateLanguageOptions();
+            filterVoicesByLanguage();
+        }
+
+        function speakText() {
+            if (!('speechSynthesis' in window)) {
+                setStatus('Text-to-speech is not supported in this browser.', true);
+                return;
+            }
+
+            const text = speechText.value.trim();
+            if (!text) {
+                setStatus('Please enter some text before speaking.', true);
+                return;
+            }
+
+            const selectedVoice = voices[Number(voiceSelect.value)];
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+                setStatus('Audio resumed.');
+                setSpeakingState(true, false);
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = selectedVoice || null;
+            utterance.rate = Number(rateInput.value);
+            utterance.pitch = Number(pitchInput.value);
+            utterance.onstart = () => {
+                setStatus('Speaking...');
+                setSpeakingState(true, false);
+            };
+            utterance.onpause = () => {
+                setStatus('Playback paused.');
+                setSpeakingState(true, true);
+            };
+            utterance.onresume = () => {
+                setStatus('Playback resumed.');
+                setSpeakingState(true, false);
+            };
+            utterance.onend = () => {
+                setStatus('Playback finished.');
+                setSpeakingState(false, false);
+            };
+            utterance.onerror = () => {
+                setStatus('Speech playback failed. Try again.', true);
+                setSpeakingState(false, false);
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function downloadText() {
+            const text = speechText.value.trim();
+            if (!text) {
+                setStatus('There is no text to download.', true);
+                return;
+            }
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'toolboxlk-text.txt';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            setStatus('Text exported successfully.');
+        }
+
+        async function exportMp3() {
+            const text = speechText.value.trim();
+            if (!text) {
+                setStatus('There is no text to convert to audio.', true);
+                return;
+            }
+
+            exportMp3Btn.disabled = true;
+            exportMp3Btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+            setStatus('Generating MP3 audio...');
+
+            try {
+                const response = await fetch('/api/tts/text-to-mp3', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text,
+                        quality: qualitySelect.value,
+                        rate: Number(rateInput.value),
+                        pitch: Number(pitchInput.value)
+                    })
+                });
+
+                const contentType = response.headers.get('content-type') || '';
+                let data = null;
+
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const responseText = await response.text();
+                    throw new Error(responseText || 'The server returned an invalid response.');
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'MP3 export failed.');
+                }
+
+                const audioUrl = data.downloadUrl;
+                audioPlayer.src = audioUrl;
+                audioPlayer.load();
+                audioPlayer.play().catch(() => {});
+
+                const link = document.createElement('a');
+                link.href = audioUrl;
+                link.download = data.filename || 'toolboxlk-voice.mp3';
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setStatus('MP3 export complete.');
+            } catch (error) {
+                setStatus(error.message || 'MP3 export failed.', true);
+            } finally {
+                exportMp3Btn.disabled = false;
+                exportMp3Btn.innerHTML = '<i class="bi bi-music-note-beamed"></i> Download MP3';
+            }
+        }
+
+        qualitySelect.addEventListener('change', updateRangeLabels);
+        rateInput.addEventListener('input', updateRangeLabels);
+        pitchInput.addEventListener('input', updateRangeLabels);
+        speechText.addEventListener('input', updateCharacterCount);
+        languageSelect.addEventListener('change', filterVoicesByLanguage);
+
+        speakBtn.addEventListener('click', speakText);
+
+        pauseBtn.addEventListener('click', () => {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.pause();
+            setStatus('Playback paused.');
+            setSpeakingState(true, true);
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            if (!('speechSynthesis' in window)) return;
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+                setStatus('Playback resumed.');
+                setSpeakingState(true, false);
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            setStatus('Playback stopped.');
+            setSpeakingState(false, false);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            speechText.value = '';
+            updateCharacterCount();
+            speechText.focus();
+            setStatus('Text cleared.');
+            setSpeakingState(false, false);
+        });
+
+        downloadBtn.addEventListener('click', downloadText);
+        exportMp3Btn.addEventListener('click', exportMp3);
+
+        if ('speechSynthesis' in window) {
+            populateVoices();
+            window.speechSynthesis.onvoiceschanged = populateVoices;
+        }
+
+        speechText.value = 'Welcome to ToolBox LK. This text is being read aloud by your browser.';
+        updateRangeLabels();
+        updateCharacterCount();
+        setStatus('Ready to speak.');
+        setSpeakingState(false, false);
+        audioPlayer.style.display = 'block';
+    </script>
+</body>
+</html>

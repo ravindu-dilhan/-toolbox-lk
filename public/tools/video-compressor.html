@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Compressor - ToolBox LK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="../index.html">
+                <i class="bi bi-tools text-primary"></i>
+                ToolBox <span class="text-primary">LK</span>
+            </a>
+            <a href="../index.html" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </nav>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-4">
+                        <div class="hero-icon mb-3">
+                            <i class="bi bi-camera-video"></i>
+                        </div>
+                        <h1 class="fw-bold">Video Compressor</h1>
+                        <p class="text-secondary">Reduce video size by creating a lighter preview export.</p>
+                    </div>
+
+                    <div class="tool-card">
+                        <form id="videoForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Choose video</label>
+                                <input type="file" class="form-control form-control-lg" id="videoFile" accept="video/*" required>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Quality</label>
+                                    <input type="range" class="form-range" id="qualityRange" min="20" max="80" value="55">
+                                    <div class="text-secondary small"><span id="qualityValue">55</span>% quality</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Max width</label>
+                                    <input type="number" class="form-control" id="maxWidth" min="160" max="1280" value="640">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mt-4" id="convertBtn">
+                                <i class="bi bi-arrow-repeat"></i>
+                                Optimize Video
+                            </button>
+                        </form>
+
+                        <div class="alert alert-success mt-4 d-none" id="resultArea">
+                            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+                                <div>
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    Optimized video ready.
+                                </div>
+                                <a id="downloadLink" class="btn btn-success" download>
+                                    <i class="bi bi-download"></i>
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-danger mt-4 d-none" id="errorArea"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const form = document.getElementById('videoForm');
+        const fileInput = document.getElementById('videoFile');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityValue = document.getElementById('qualityValue');
+        const maxWidthInput = document.getElementById('maxWidth');
+        const convertBtn = document.getElementById('convertBtn');
+        const resultArea = document.getElementById('resultArea');
+        const downloadLink = document.getElementById('downloadLink');
+        const errorArea = document.getElementById('errorArea');
+
+        qualityRange.addEventListener('input', () => {
+            qualityValue.textContent = qualityRange.value;
+        });
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const file = fileInput.files[0];
+
+            if (!file) {
+                errorArea.textContent = 'Please choose a video file.';
+                errorArea.classList.remove('d-none');
+                return;
+            }
+
+            convertBtn.disabled = true;
+            resultArea.classList.add('d-none');
+            errorArea.classList.add('d-none');
+
+            try {
+                const objectUrl = URL.createObjectURL(file);
+                const video = await loadVideo(objectUrl);
+                const maxWidth = Number(maxWidthInput.value) || 640;
+                const quality = Number(qualityRange.value) / 100;
+
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(1, maxWidth / video.videoWidth);
+                canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+                canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+
+                const stream = canvas.captureStream(24);
+                const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+                const recorder = new MediaRecorder(stream, { mimeType });
+                const chunks = [];
+
+                recorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) chunks.push(event.data);
+                };
+
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    downloadLink.href = url;
+                    downloadLink.download = `${file.name.replace(/\.[^.]+$/, '') || 'video'}-optimized.webm`;
+                    resultArea.classList.remove('d-none');
+                };
+
+                video.muted = true;
+                video.playsInline = true;
+                video.currentTime = 0;
+                video.play();
+
+                const ctx = canvas.getContext('2d');
+                const endTime = Math.min(video.duration, 3);
+                recorder.start();
+
+                await new Promise((resolve, reject) => {
+                    const tick = () => {
+                        if (video.currentTime >= endTime) {
+                            resolve();
+                            return;
+                        }
+                        ctx.fillStyle = '#111827';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        requestAnimationFrame(tick);
+                    };
+
+                    video.onended = () => resolve();
+                    video.onerror = () => reject(new Error('The selected video could not be processed.'));
+                    tick();
+                });
+
+                recorder.stop();
+            } catch (error) {
+                errorArea.textContent = error.message || 'Video optimization failed.';
+                errorArea.classList.remove('d-none');
+            } finally {
+                convertBtn.disabled = false;
+            }
+        });
+
+        function loadVideo(src) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.preload = 'auto';
+                video.onloadedmetadata = () => resolve(video);
+                video.onerror = () => reject(new Error('The selected file is not a valid video.'));
+                video.src = src;
+            });
+        }
+    </script>
+</body>
+</html>

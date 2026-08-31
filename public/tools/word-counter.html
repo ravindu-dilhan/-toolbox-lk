@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Counter - ToolBox LK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-white border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="../index.html">
+                <i class="bi bi-tools text-primary"></i>
+                ToolBox <span class="text-primary">LK</span>
+            </a>
+            <a href="../index.html" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </nav>
+
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="text-center mb-4">
+                        <div class="hero-icon mb-3">
+                            <i class="bi bi-card-text"></i>
+                        </div>
+                        <h1 class="fw-bold">Word Counter</h1>
+                        <p class="text-secondary">Measure word count, characters, reading time, and more in one place.</p>
+                    </div>
+
+                    <div class="tool-card">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Your text</label>
+                            <textarea id="textInput" class="form-control" rows="10" placeholder="Type or paste any text here..."></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-3 text-center">
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="small text-secondary">Words</div>
+                                    <div class="fs-4 fw-bold" id="wordCount">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="small text-secondary">Characters</div>
+                                    <div class="fs-4 fw-bold" id="charCount">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="small text-secondary">Sentences</div>
+                                    <div class="fs-4 fw-bold" id="sentenceCount">0</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="border rounded p-3 bg-light">
+                                    <div class="small text-secondary">Reading time</div>
+                                    <div class="fs-4 fw-bold" id="readingTime">0 min</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button id="clearBtn" class="btn btn-outline-secondary" type="button">
+                                <i class="bi bi-x-circle"></i>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const wordCount = document.getElementById('wordCount');
+        const charCount = document.getElementById('charCount');
+        const sentenceCount = document.getElementById('sentenceCount');
+        const readingTime = document.getElementById('readingTime');
+        const clearBtn = document.getElementById('clearBtn');
+
+        textInput.addEventListener('input', updateStats);
+        clearBtn.addEventListener('click', () => {
+            textInput.value = '';
+            updateStats();
+            textInput.focus();
+        });
+
+        function updateStats() {
+            const value = textInput.value;
+            const trimmed = value.trim();
+            const words = trimmed ? trimmed.split(/\s+/).length : 0;
+            const characters = value.length;
+            const sentences = (value.match(/[.!?]+\s*/g) || []).length + (trimmed && /[.!?]$/.test(trimmed) ? 0 : (trimmed ? 0 : 0));
+            const sentenceTotal = trimmed ? (value.split(/[.!?]+/).filter((part) => part.trim()).length) : 0;
+            const minutes = Math.max(1, Math.ceil(words / 200));
+
+            wordCount.textContent = words;
+            charCount.textContent = characters;
+            sentenceCount.textContent = sentenceTotal;
+            readingTime.textContent = `${Math.max(0, Math.ceil(words / 200))} min`;
+        }
+
+        updateStats();
+    </script>
+</body>
+</html>
