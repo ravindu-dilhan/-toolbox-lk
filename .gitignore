@@ -4,4 +4,4 @@ outputs/
 .DS_Store
 .vscode/
 npm-debug.log
-package-lock.json
+
