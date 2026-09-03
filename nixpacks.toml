@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs", "ffmpeg", "espeak"]
+nixPkgs = ["nodejs", "ffmpeg", "espeak", "python3"]
 
 [phases.install]
 cmds = ["npm install"]

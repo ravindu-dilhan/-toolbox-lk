@@ -7,7 +7,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "postinstall": "python3 -m pip install --no-cache-dir yt-dlp"
+    "postinstall": "python3 -m pip install --no-cache-dir --break-system-packages yt-dlp || python -m pip install --no-cache-dir --break-system-packages yt-dlp || pip install --no-cache-dir --break-system-packages yt-dlp"
   },
   "keywords": [],
   "author": "",
